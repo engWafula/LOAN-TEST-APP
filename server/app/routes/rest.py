@@ -13,7 +13,8 @@ payment_schema = PaymentCreateSchema()
 def add_payment():
     try:
         try:
-            validated_data = payment_schema.load(request.get_json() or {})
+            json_data = request.get_json(force=True, silent=True) or {}
+            validated_data = payment_schema.load(json_data)
         except MarshmallowValidationError as err:
             logger.warning(f"Validation error: {err.messages}")
             return jsonify({"error": "Validation failed", "details": err.messages}), 400

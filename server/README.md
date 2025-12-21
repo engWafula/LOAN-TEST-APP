@@ -67,9 +67,16 @@ server/
 │   ├── services/            # Business logic
 │   │   ├── __init__.py
 │   │   └── loan_service.py
-│   └── routes/              # REST API routes
+│   ├── routes/              # API routes
+│   │   ├── __init__.py
+│   │   ├── rest.py          # REST endpoints
+│   │   └── graphql.py       # GraphQL endpoint registration
+│   ├── validators/          # Input validation schemas
+│   │   ├── __init__.py
+│   │   └── payment_schema.py
+│   └── data/                # Seed data fixtures
 │       ├── __init__.py
-│       └── rest.py
+│       └── fixtures.py
 ├── tests/                   # Unit tests
 │   ├── __init__.py
 │   ├── conftest.py
@@ -93,62 +100,65 @@ server/
 
 **Method:** `POST`
 
-**Description:** This endpoint allows you to query loan products and loan applications using GraphQL.
+The GraphQL endpoint supports querying loans with optional pagination. You can use GraphiQL interface at the same URL for interactive querying.
 
-**Example Queries:**
+**Example Query - Get all loans:**
 
-To get all loans:
 ```graphql
 {
   loans {
-    id
-    name
-    interestRate
-    principal
-    dueDate
-  }
-}
-```
-
-To get a single loan with payments:
-```graphql
-{
-  loan(id: 1) {
-    id
-    name
-    interestRate
-    principal
-    dueDate
-    loanPayments {
+    loans {
       id
-      loanId
-      paymentDate
+      name
+      interestRate
+      principal
+      dueDate
+      loanPayments {
+        id
+        loanId
+        paymentDate
+      }
+    }
+    pagination {
+      page
+      pageSize
+      total
+      totalPages
+      hasNext
+      hasPrev
     }
   }
 }
 ```
 
-To get all loan payments:
+**Example Query - Get loans with pagination:**
+
 ```graphql
 {
-  loanPayments {
-    id
-    loanId
-    paymentDate
+  loans(page: 1, pageSize: 10) {
+    loans {
+      id
+      name
+      interestRate
+      principal
+      dueDate
+    }
+    pagination {
+      page
+      pageSize
+      total
+      totalPages
+      hasNext
+      hasPrev
+    }
   }
 }
 ```
 
-To get payments for a specific loan:
-```graphql
-{
-  loanPaymentsByLoan(loanId: 1) {
-    id
-    loanId
-    paymentDate
-  }
-}
-```
+**Notes:**
+- If `pageSize` is 0 or omitted, all loans are returned
+- Default page size when paginating is 10, max is 100
+- Each loan includes its associated payments in the `loanPayments` field
 
 ### REST Endpoints
 
@@ -157,7 +167,7 @@ To get payments for a specific loan:
 **URL:** `/`  
 **Method:** `GET`
 
-**Description:** This endpoint returns a welcome message.
+Returns a welcome message and health status.
 
 **Response:**
 ```json
@@ -172,7 +182,7 @@ To get payments for a specific loan:
 **URL:** `/health`  
 **Method:** `GET`
 
-**Description:** Health check endpoint for monitoring.
+Simple health check endpoint for monitoring.
 
 **Response:**
 ```json
@@ -181,54 +191,12 @@ To get payments for a specific loan:
 }
 ```
 
-#### Get All Loans
-
-**URL:** `/api/loans`  
-**Method:** `GET`
-
-**Description:** Get all loans.
-
-**Response:**
-```json
-{
-  "loans": [
-    {
-      "id": 1,
-      "name": "Tom's Loan",
-      "interest_rate": 5.0,
-      "principal": 10000,
-      "due_date": "2025-03-01"
-    }
-  ]
-}
-```
-
-#### Get All Payments
-
-**URL:** `/api/payments`  
-**Method:** `GET`
-
-**Description:** Get all loan payments.
-
-**Response:**
-```json
-{
-  "payments": [
-    {
-      "id": 1,
-      "loan_id": 1,
-      "payment_date": "2024-03-04"
-    }
-  ]
-}
-```
-
 #### Add Payment
 
 **URL:** `/api/payments`  
 **Method:** `POST`
 
-**Description:** Add a new payment.
+Adds a new payment for a loan. The endpoint validates input using Marshmallow schemas.
 
 **Request Body:**
 ```json
@@ -238,7 +206,7 @@ To get payments for a specific loan:
 }
 ```
 
-**Response:**
+**Success Response (201):**
 ```json
 {
   "message": "Payment added successfully",
@@ -253,9 +221,56 @@ To get payments for a specific loan:
 **Error Response (400):**
 ```json
 {
+  "error": "Validation failed",
+  "details": {
+    "loan_id": ["loan_id is required"]
+  }
+}
+```
+
+Or for business logic errors:
+```json
+{
   "error": "Loan with id 999 does not exist"
 }
 ```
+
+**Validation Rules:**
+- `loan_id` is required and must be a positive integer
+- `payment_date` is optional and must be in `YYYY-MM-DD` format if provided
+- The loan must exist in the system
+
+## Implementation Details
+
+### Data Storage
+
+The application uses in-memory storage for simplicity. Initial data is loaded from fixtures in `app/data/fixtures.py`. Each service instance maintains its own copy of the data.
+
+### Input Validation
+
+Input validation is handled using Marshmallow schemas defined in `app/validators/`. This provides:
+- Type checking
+- Required field validation
+- Custom validation rules
+- Clear error messages
+
+### Pagination
+
+Pagination is implemented for the GraphQL `loans` query. The pagination info includes:
+- Current page number
+- Page size
+- Total number of items
+- Total pages
+- Whether next/previous pages exist
+
+### Error Handling
+
+The application includes error handlers for common HTTP status codes:
+- 400: Bad request (validation errors)
+- 404: Resource not found
+- 500: Internal server error
+
+Routes handle validation errors explicitly and return appropriate error messages.
 
 ## Configuration
 
@@ -282,11 +297,11 @@ Key environment variables:
 
 ## Testing
 
-The project includes comprehensive unit tests covering:
+The project includes unit tests covering:
 - Models (Loan, LoanPayment)
-- Services (LoanService)
-- REST API routes
-- GraphQL schema
+- Services (LoanService with pagination)
+- REST API routes (validation, error handling)
+- GraphQL schema (queries, pagination)
 
 Run tests with:
 ```bash
@@ -298,12 +313,3 @@ Generate coverage report:
 pytest --cov=app --cov-report=html
 ```
 
-## Code Quality
-
-The codebase follows best practices:
-- Separation of concerns (models, services, routes, schemas)
-- Comprehensive error handling
-- Logging for debugging and monitoring
-- Unit tests with high coverage
-- Production-ready configuration management
-- Docker support for containerization
