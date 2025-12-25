@@ -4,7 +4,6 @@ from typing import List, Optional, Tuple
 from app.models.loan import Loan, LoanPayment
 from app.repositories.loan_repository import LoanRepository
 from app.repositories.payment_repository import PaymentRepository
-from app.utils.date_utils import get_current_date
 
 
 class LoanService:
@@ -49,9 +48,6 @@ class LoanService:
         """
         if not self._loan_repository.exists(loan_id):
             raise ValueError(f"Loan with id {loan_id} does not exist")
-        
-        if payment_date is None:
-            payment_date = get_current_date()
         
         return self._payment_repository.create(
             loan_id=loan_id,
