@@ -61,10 +61,7 @@ export function AddPaymentModal({ isOpen, onClose, onPaymentAdded, loans }: AddP
         onPaymentAdded();
       }
 
-      setTimeout(() => {
         setSuccess(false);
-        onClose();
-      }, 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add payment');
     } finally {
