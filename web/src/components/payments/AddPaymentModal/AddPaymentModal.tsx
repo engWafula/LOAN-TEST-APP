@@ -48,7 +48,6 @@ export function AddPaymentModal({ isOpen, onClose, onPaymentAdded, loans }: AddP
     },
   });
 
-  // Reset form when modal closes
   useEffect(() => {
     if (!isOpen) {
       reset();

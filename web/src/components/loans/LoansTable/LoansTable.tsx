@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { CategorizedPayment } from '../../../utils/paymentStatus';
 import { DataTable } from './DataTable';
 import { TablePagination } from './TablePagination';
@@ -60,7 +60,7 @@ export function LoansTable({ payments, itemsPerPage = 20, onAddPaymentClick }: L
   );
 
   // Reset to page 1 if current page is out of bounds
-  useMemo(() => {
+  useEffect(() => {
     if (paginationState.page > totalPages && totalPages > 0) {
       setPaginationState((prev) => ({ ...prev, page: 1 }));
     }
