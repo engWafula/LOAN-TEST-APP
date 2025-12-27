@@ -1,6 +1,9 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { addPayment } from '../../../utils/api';
 import { LoanData } from '../../../utils/paymentStatus';
+import { paymentFormInputSchema, type PaymentFormInput } from '../../../validators/paymentSchema';
 import {
   Dialog,
   DialogContent,
@@ -27,55 +30,70 @@ interface AddPaymentModalProps {
 }
 
 export function AddPaymentModal({ isOpen, onClose, onPaymentAdded, loans }: AddPaymentModalProps) {
-  const [loanId, setLoanId] = useState('');
-  const [paymentDate, setPaymentDate] = useState('');
-  const [amount, setAmount] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors, isSubmitting },
+    reset,
+  } = useForm<PaymentFormInput>({
+    resolver: zodResolver(paymentFormInputSchema),
+    defaultValues: {
+      loan_id: '',
+      payment_date: '',
+      amount: '',
+    },
+  });
+
+  // Reset form when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      reset();
+      setError(null);
+      setSuccess(false);
+    }
+  }, [isOpen, reset]);
+
+  const onSubmit = async (data: PaymentFormInput) => {
     setError(null);
     setSuccess(false);
-    setIsSubmitting(true);
 
     try {
-      const loanIdNum = parseInt(loanId, 10);
-      if (!loanId || isNaN(loanIdNum) || loanIdNum < 1) {
-        throw new Error('Please select a loan');
-      }
+      // Transform form data to API format
+      const loanIdNum = parseInt(data.loan_id, 10);
+      const amountNum = data.amount && data.amount.trim() !== '' ? parseFloat(data.amount) : undefined;
 
       await addPayment({
         loan_id: loanIdNum,
-        payment_date: paymentDate || undefined,
-        amount: amount ? parseFloat(amount) : undefined,
+        payment_date: data.payment_date || undefined,
+        amount: amountNum,
       });
 
       setSuccess(true);
-      setLoanId('');
-      setPaymentDate('');
-      setAmount('');
+      reset();
 
       if (onPaymentAdded) {
         onPaymentAdded();
       }
 
+      // Auto-close after success
+      setTimeout(() => {
         setSuccess(false);
+        onClose();
+      }, 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add payment');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   const handleClose = () => {
     if (!isSubmitting) {
+      reset();
       setError(null);
       setSuccess(false);
-      setLoanId('');
-      setPaymentDate('');
-      setAmount('');
       onClose();
     }
   };
@@ -112,42 +130,64 @@ export function AddPaymentModal({ isOpen, onClose, onPaymentAdded, loans }: AddP
             description="There are no loans available to add payments to."
           />
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <FormField label="Select Loan" htmlFor="loan-select" required>
-              <FormSelect
-                id="loan-select"
-                value={loanId}
-                onValueChange={setLoanId}
-                disabled={isSubmitting}
-                required
-                placeholder="-- Select a loan --"
-                options={loans.map((loan) => ({
-                  value: loan.id.toString(),
-                  label: `${loan.name} (ID: ${loan.id}) - ${formatCurrency(loan.principal)}`,
-                }))}
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              label="Select Loan"
+              htmlFor="loan_id"
+              required
+              error={errors.loan_id?.message}
+            >
+              <Controller
+                name="loan_id"
+                control={control}
+                render={({ field }) => (
+                  <FormSelect
+                    id="loan_id"
+                    value={field.value ?? ''}
+                    onValueChange={field.onChange}
+                    disabled={isSubmitting}
+                    required
+                    error={!!errors.loan_id}
+                    placeholder="-- Select a loan --"
+                    options={loans.map((loan) => ({
+                      value: loan.id.toString(),
+                      label: `${loan.name} (ID: ${loan.id}) - ${formatCurrency(loan.principal)}`,
+                    }))}
+                  />
+                )}
               />
             </FormField>
 
-            <FormField label="Payment Date" htmlFor="payment-date" optional>
+            <FormField
+              label="Payment Date"
+              htmlFor="payment_date"
+              optional
+              error={errors.payment_date?.message}
+            >
               <FormInput
-                id="payment-date"
+                id="payment_date"
                 type="date"
-                value={paymentDate}
-                onChange={(e) => setPaymentDate(e.target.value)}
+                {...register('payment_date')}
                 disabled={isSubmitting}
+                error={!!errors.payment_date}
               />
             </FormField>
 
-            <FormField label="Amount" htmlFor="amount" optional>
+            <FormField
+              label="Amount"
+              htmlFor="amount"
+              optional
+              error={errors.amount?.message}
+            >
               <FormInput
                 id="amount"
                 type="number"
                 step="0.01"
                 min="0"
                 placeholder="0.00"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                {...register('amount')}
                 disabled={isSubmitting}
+                error={!!errors.amount}
               />
             </FormField>
 
