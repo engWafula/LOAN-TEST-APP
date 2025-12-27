@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import {
   Table,
   TableBody,
@@ -15,17 +14,15 @@ interface LoanCalculatorProps {
   months: number;
 }
 
-export function LoanCalculator({ principal, rate, months }: LoanCalculatorProps) {
-  const [interest, setInterest] = useState(0);
+function calculateInterest(principal: number, rate: number, months: number): number {
+  if (principal > 0 && rate >= 0 && months > 0) {
+    return (principal * rate * months) / 100;
+  }
+  return 0;
+}
 
-  useEffect(() => {
-    if (principal > 0 && rate >= 0 && months > 0) {
-      const calculatedInterest = (principal * rate * months) / 100;
-      setInterest(calculatedInterest);
-    } else {
-      setInterest(0);
-    }
-  }, [principal, rate, months]);
+export function LoanCalculator({ principal, rate, months }: LoanCalculatorProps) {
+  const interest = calculateInterest(principal, rate, months);
 
   return (
     <div className="rounded-md border">
