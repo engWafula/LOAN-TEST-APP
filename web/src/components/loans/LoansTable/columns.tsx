@@ -1,35 +1,9 @@
 import { LoansTableColumn } from './types';
-import { LoanData, categorizePayment, PaymentStatus } from '../../../utils/paymentStatus';
+import { LoanData, getLoanStatus, PaymentStatus } from '../../../utils/paymentStatus';
 import { formatCurrency, formatDate } from '@/lib/formatters';
 import { Button } from '@/components/ui/button';
 import { PaymentStatus as PaymentStatusComponent } from '@/components/ui/PaymentStatus';
 import { Eye } from 'lucide-react';
-
-/**
- * Gets the payment status for a loan based on its most recent payment
- */
-function getLoanStatus(loan: LoanData): PaymentStatus {
-  const payments = loan.loanPayments?.filter((p): p is NonNullable<typeof p> => p !== null) || [];
-  
-  if (payments.length === 0) {
-    return 'Unpaid';
-  }
-  
-  // Find the most recent payment (by paymentDate, excluding nulls)
-  const validPayments = payments.filter(p => p.paymentDate !== null);
-  if (validPayments.length === 0) {
-    return 'Unpaid';
-  }
-  
-  // Sort by paymentDate descending to get the most recent
-  const sortedPayments = [...validPayments].sort((a, b) => {
-    if (!a.paymentDate || !b.paymentDate) return 0;
-    return new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime();
-  });
-  
-  const mostRecentPayment = sortedPayments[0];
-  return categorizePayment(loan.dueDate, mostRecentPayment.paymentDate);
-}
 
 export const createLoansTableColumns = (
   onViewPayments?: (loan: LoanData) => void
@@ -110,5 +84,4 @@ export const createLoansTableColumns = (
   },
 ];
 
-// Default export for backward compatibility
 export const loansTableColumns = createLoansTableColumns();

@@ -29,26 +29,31 @@ export function categorizePayment(
   dueDate: string,
   paymentDate: string | null
 ): PaymentStatus {
-  if (!paymentDate) {
-    return 'Unpaid';
-  }
+  if (!paymentDate) return 'Unpaid';
 
   const due = parseISO(dueDate);
   const payment = parseISO(paymentDate);
   
-  if (!isValid(due) || !isValid(payment)) {
-    return 'Unpaid';
-  }
+  if (!isValid(due) || !isValid(payment)) return 'Unpaid';
 
   const diffDays = differenceInDays(payment, due);
+  
+  return diffDays <= 5 ? 'On Time' 
+       : diffDays <= 30 ? 'Late' 
+       : 'Defaulted';
+}
 
-  if (diffDays <= 5) {
-    return 'On Time';
-  } else if (diffDays <= 30) {
-    return 'Late';
-  } else {
-    return 'Defaulted';
-  }
+export function getLoanStatus(loan: LoanData): PaymentStatus {
+  const validPayments = loan.loanPayments
+    ?.filter((p): p is NonNullable<typeof p> => p !== null && p.paymentDate !== null) || [];
+  
+  if (validPayments.length === 0) return 'Unpaid';
+  
+  const mostRecent = validPayments.reduce((latest, current) => 
+    current.paymentDate! > latest.paymentDate! ? current : latest
+  );
+  
+  return categorizePayment(loan.dueDate, mostRecent.paymentDate);
 }
 
 export function categorizeLoanPayments(
