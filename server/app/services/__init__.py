@@ -1,6 +1,4 @@
-"""
-Business logic services.
-"""
+
 from app.services.loan_service import LoanService
 from app.services.service_factory import (
     get_loan_service,

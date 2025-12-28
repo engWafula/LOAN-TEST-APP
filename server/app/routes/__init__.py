@@ -1,4 +1,2 @@
-"""
-REST API routes.
-"""
+
 
