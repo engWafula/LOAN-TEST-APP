@@ -1,4 +1,3 @@
-"""Business logic service for loan operations."""
 import datetime
 from typing import List, Optional
 from app.models.loan import Loan, LoanPayment
@@ -7,7 +6,6 @@ from app.repositories.payment_repository import PaymentRepository
 
 
 class LoanService:
-    """Service layer for loan business logic."""
     
     def __init__(
         self,
