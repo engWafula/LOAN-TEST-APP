@@ -2,7 +2,6 @@ import os
 
 
 class Config:
-    SECRET_KEY = os.environ.get("SECRET_KEY") or "dev-secret-key-change-in-production"
     DEBUG = os.environ.get("FLASK_DEBUG", "False").lower() == "true"
     GRAPHIQL_ENABLED = os.environ.get("GRAPHIQL_ENABLED", "True").lower() == "true"
     HOST = os.environ.get("HOST", "0.0.0.0")
