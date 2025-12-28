@@ -34,22 +34,6 @@ The ESLint configuration is located in `eslint.config.js` and uses:
 - React hooks linting
 - React refresh rules
 
-### Common Linting Issues
-
-If you encounter linting errors:
-1. **Floating Promises**: Use `void` operator for promises that don't need to be awaited
-   ```typescript
-   void refetch(); // Instead of: refetch();
-   ```
-
-2. **Type Assertions**: Remove unnecessary type assertions when TypeScript can infer types
-
-3. **Unsafe Any**: Use proper types instead of `any` for better type safety
-
-4. **Auto-fix**: Many issues can be automatically fixed:
-   ```bash
-   npm run lint -- --fix
-   ```
 
 ## Expanding the ESLint configuration
 
