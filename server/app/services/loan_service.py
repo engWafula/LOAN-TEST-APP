@@ -33,12 +33,6 @@ class LoanService:
         loan_id: int, 
         payment_date: Optional[datetime.date] = None
     ) -> LoanPayment:
-        """
-        Add a payment for a loan.
-        
-        Raises:
-            ValueError: If loan_id does not exist
-        """
         if not self._loan_repository.exists(loan_id):
             raise ValueError(f"Loan with id {loan_id} does not exist")
         
