@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { LoanData } from '../../../utils/paymentStatus';
 import { categorizePayment, PaymentStatus } from '../../../utils/paymentStatus';
 import { PaymentStatus as PaymentStatusComponent } from '@/components/ui/PaymentStatus';
@@ -12,8 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/formatters';
 import { DataTable } from '../../loans/LoansTable/DataTable';
-import { ColumnDef, SortState } from '../../loans/LoansTable/types';
-import { sortData, toggleSort } from '../../loans/LoansTable/utils';
+import { ColumnDef } from '../../loans/LoansTable/types';
 
 interface PaymentWithStatus {
   id: number;
@@ -30,18 +29,12 @@ interface ViewPaymentsModalProps {
 }
 
 export function ViewPaymentsModal({ isOpen, onClose, loan }: ViewPaymentsModalProps) {
-  const [sortState, setSortState] = useState<SortState>({
-    field: null,
-    direction: null,
-  });
-
   const columns: ColumnDef<PaymentWithStatus>[] = useMemo(
     () => [
       {
         id: 'id',
         header: 'Payment ID',
         accessor: (row) => row.id,
-        sortable: true,
         className: 'font-medium',
       },
       {
@@ -49,36 +42,23 @@ export function ViewPaymentsModal({ isOpen, onClose, loan }: ViewPaymentsModalPr
         header: 'Payment Date',
         accessor: (row) => row.paymentDate,
         cell: (value) => (value ? formatDate(value as string) : 'N/A'),
-        sortable: true,
       },
       {
         id: 'dueDate',
         header: 'Due Date',
         accessor: (row) => row.dueDate,
         cell: (value) => formatDate(value as string),
-        sortable: true,
       },
       {
         id: 'status',
         header: 'Status',
         accessor: (row) => row.status,
         cell: (value) => <PaymentStatusComponent status={value as PaymentStatus} />,
-        sortable: true,
         align: 'center',
       },
     ],
     []
   );
-
-  const handleSort = (field: string) => {
-    const newSortState = toggleSort(sortState, field);
-    setSortState(newSortState);
-  };
-
-  const getColumnAccessor = (field: string) => {
-    const column = columns.find((col) => col.id === field);
-    return column?.accessor || (() => null);
-  };
 
   const payments = loan?.loanPayments?.filter((p) => p !== null) || [];
   const categorizedPayments: PaymentWithStatus[] = useMemo(() => {
@@ -89,12 +69,6 @@ export function ViewPaymentsModal({ isOpen, onClose, loan }: ViewPaymentsModalPr
       dueDate: loan.dueDate,
     }));
   }, [loan, payments]);
-
-  const sortedData = useMemo(() => {
-    if (!sortState.field || categorizedPayments.length === 0) return categorizedPayments;
-    const accessor = getColumnAccessor(sortState.field);
-    return sortData(categorizedPayments, sortState, accessor);
-  }, [categorizedPayments, sortState, columns]);
 
   if (!loan) return null;
 
@@ -110,10 +84,8 @@ export function ViewPaymentsModal({ isOpen, onClose, loan }: ViewPaymentsModalPr
 
         <div className="mt-4">
           <DataTable
-            data={sortedData}
+            data={categorizedPayments}
             columns={columns}
-            sortState={sortState}
-            onSort={handleSort}
             getRowId={(row) => row.id}
             emptyTitle="No payments found"
             emptyDescription="This loan has no payments recorded yet."

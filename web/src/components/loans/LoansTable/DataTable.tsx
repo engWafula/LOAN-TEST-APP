@@ -15,16 +15,16 @@ import { EmptyState } from '@/components/ui/EmptyState';
 interface DataTableProps<T> {
   data: T[];
   columns: ColumnDef<T>[];
-  sortState: SortState;
-  onSort: (field: string) => void;
+  sortState?: SortState;
+  onSort?: (field: string) => void;
   getRowId: (row: T) => string | number;
   emptyMessage?: string;
   emptyTitle?: string;
   emptyDescription?: string;
 }
 
-function SortIcon({ field, sortState }: { field: string; sortState: SortState }) {
-  if (sortState.field !== field) {
+function SortIcon({ field, sortState }: { field: string; sortState?: SortState }) {
+  if (!sortState || sortState.field !== field) {
     return <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />;
   }
   if (sortState.direction === 'asc') {
@@ -69,7 +69,7 @@ export function DataTable<T>({
                   column.headerClassName
                 )}
               >
-                {column.sortable ? (
+                {column.sortable && onSort ? (
                   <Button
                     variant="ghost"
                     size="sm"
