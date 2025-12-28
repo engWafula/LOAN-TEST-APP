@@ -30,12 +30,6 @@ This is a python server and requires that you have `python 3.9+` installed on yo
    python app.py
    ```
 
-4. Or use Makefile:
-   ```bash
-   make install
-   make run
-   ```
-
 ## Running Tests
 
 ```bash
@@ -44,53 +38,8 @@ pytest
 
 # Run tests with coverage
 pytest --cov=app --cov-report=html
-
-# Or use Makefile
-make test
-make test-cov
 ```
 
-## Project Structure
-
-```
-server/
-├── app/
-│   ├── __init__.py          # Application factory
-│   ├── config.py            # Configuration management
-│   ├── errors.py            # Error handlers
-│   ├── models/              # Data models
-│   │   ├── __init__.py
-│   │   └── loan.py
-│   ├── schemas/             # GraphQL schemas
-│   │   ├── __init__.py
-│   │   └── schema.py
-│   ├── services/            # Business logic
-│   │   ├── __init__.py
-│   │   └── loan_service.py
-│   ├── routes/              # API routes
-│   │   ├── __init__.py
-│   │   ├── rest.py          # REST endpoints
-│   │   └── graphql.py       # GraphQL endpoint registration
-│   ├── validators/          # Input validation schemas
-│   │   ├── __init__.py
-│   │   └── payment_schema.py
-│   └── data/                # Seed data fixtures
-│       ├── __init__.py
-│       └── fixtures.py
-├── tests/                   # Unit tests
-│   ├── __init__.py
-│   ├── conftest.py
-│   ├── test_models.py
-│   ├── test_services.py
-│   ├── test_routes.py
-│   └── test_graphql.py
-├── app.py                   # Application entry point
-├── requirements.txt         # Python dependencies
-├── pytest.ini              # Pytest configuration
-├── Dockerfile              # Docker configuration
-├── compose.yaml            # Docker Compose configuration
-└── Makefile                # Make commands
-```
 
 ## API Documentation
 
@@ -100,65 +49,84 @@ server/
 
 **Method:** `POST`
 
-The GraphQL endpoint supports querying loans with optional pagination. You can use GraphiQL interface at the same URL for interactive querying.
+The GraphQL endpoint provides a flexible way to query loan data. You can use the GraphiQL interface at the same URL for interactive querying (enabled by default in development).
 
 **Example Query - Get all loans:**
 
 ```graphql
 {
   loans {
-    loans {
+    id
+    name
+    interestRate
+    principal
+    dueDate
+    loanPayments {
       id
-      name
-      interestRate
-      principal
-      dueDate
-      loanPayments {
-        id
-        loanId
-        paymentDate
-      }
-    }
-    pagination {
-      page
-      pageSize
-      total
-      totalPages
-      hasNext
-      hasPrev
+      loanId
+      paymentDate
     }
   }
 }
 ```
 
-**Example Query - Get loans with pagination:**
+**Example Query - Get loans with specific fields:**
 
 ```graphql
 {
-  loans(page: 1, pageSize: 10) {
-    loans {
-      id
-      name
-      interestRate
-      principal
-      dueDate
-    }
-    pagination {
-      page
-      pageSize
-      total
-      totalPages
-      hasNext
-      hasPrev
+  loans {
+    id
+    name
+    principal
+    loanPayments {
+      paymentDate
     }
   }
 }
 ```
 
+**Response Example:**
+
+```json
+{
+  "data": {
+    "loans": [
+      {
+        "id": 1,
+        "name": "Tom's Loan",
+        "interestRate": 5.0,
+        "principal": 10000,
+        "dueDate": "2025-03-01",
+        "loanPayments": [
+          {
+            "id": 1,
+            "loanId": 1,
+            "paymentDate": "2025-03-04"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Available Fields:**
+- `loans`: Returns a list of all loans
+  - `id` (Int): Unique loan identifier
+  - `name` (String): Loan name
+  - `interestRate` (Float): Interest rate percentage
+  - `principal` (Int): Loan principal amount
+  - `dueDate` (String): Loan due date in ISO format (YYYY-MM-DD)
+  - `loanPayments` (List): Associated payments for the loan
+    - `id` (Int): Payment identifier
+    - `loanId` (Int): Associated loan ID
+    - `paymentDate` (String): Payment date in ISO format, or null if not paid
+
 **Notes:**
-- If `pageSize` is 0 or omitted, all loans are returned
-- Default page size when paginating is 10, max is 100
+- All loans are returned (no pagination)
 - Each loan includes its associated payments in the `loanPayments` field
+- Payment dates can be `null` for unpaid loans
+- Use GraphiQL interface for interactive query building and schema exploration
 
 ### REST Endpoints
 
@@ -194,7 +162,8 @@ Simple health check endpoint for monitoring.
 #### Add Payment
 
 **URL:** `/api/payments`  
-**Method:** `POST`
+**Method:** `POST`  
+**Content-Type:** `application/json`
 
 Adds a new payment for a loan. The endpoint validates input using Marshmallow schemas.
 
@@ -206,7 +175,11 @@ Adds a new payment for a loan. The endpoint validates input using Marshmallow sc
 }
 ```
 
-**Success Response (201):**
+**Request Parameters:**
+- `loan_id` (required, integer): The ID of the loan to add a payment for. Must be a positive integer.
+- `payment_date` (optional, string): Payment date in `YYYY-MM-DD` format. If omitted or `null`, the payment is recorded without a date.
+
+**Success Response (201 Created):**
 ```json
 {
   "message": "Payment added successfully",
@@ -218,7 +191,9 @@ Adds a new payment for a loan. The endpoint validates input using Marshmallow sc
 }
 ```
 
-**Error Response (400):**
+**Error Responses:**
+
+**400 Bad Request - Validation Error:**
 ```json
 {
   "error": "Validation failed",
@@ -228,23 +203,31 @@ Adds a new payment for a loan. The endpoint validates input using Marshmallow sc
 }
 ```
 
-Or for business logic errors:
+**400 Bad Request - Business Logic Error:**
 ```json
 {
   "error": "Loan with id 999 does not exist"
 }
 ```
 
+**500 Internal Server Error:**
+```json
+{
+  "error": "Internal server error"
+}
+```
+
 **Validation Rules:**
-- `loan_id` is required and must be a positive integer
+- `loan_id` is required and must be a positive integer (≥ 1)
 - `payment_date` is optional and must be in `YYYY-MM-DD` format if provided
+- Empty strings for `payment_date` are treated as `null`
 - The loan must exist in the system
 
 ## Implementation Details
 
 ### Data Storage
 
-The application uses in-memory storage for simplicity. Initial data is loaded from fixtures in `app/data/fixtures.py`. Each service instance maintains its own copy of the data.
+ Data is loaded from fixtures in `app/data/fixtures.py`. Each service instance maintains its own copy of the data.
 
 ### Input Validation
 
@@ -254,14 +237,6 @@ Input validation is handled using Marshmallow schemas defined in `app/validators
 - Custom validation rules
 - Clear error messages
 
-### Pagination
-
-Pagination is implemented for the GraphQL `loans` query. The pagination info includes:
-- Current page number
-- Page size
-- Total number of items
-- Total pages
-- Whether next/previous pages exist
 
 ### Error Handling
 
@@ -272,36 +247,15 @@ The application includes error handlers for common HTTP status codes:
 
 Routes handle validation errors explicitly and return appropriate error messages.
 
-## Configuration
-
-Configuration is managed through environment variables. See `.env.example` for available options.
-
-Key environment variables:
-- `SECRET_KEY`: Flask secret key (required in production)
-- `FLASK_DEBUG`: Enable debug mode (default: False)
-- `HOST`: Server host (default: 0.0.0.0)
-- `PORT`: Server port (default: 5000)
-- `GRAPHIQL_ENABLED`: Enable GraphiQL interface (default: True)
-- `LOG_LEVEL`: Logging level (default: INFO)
-
-## Production Deployment
-
-1. Set environment variables (especially `SECRET_KEY`)
-2. Set `FLASK_DEBUG=False`
-3. Set `GRAPHIQL_ENABLED=False` for production
-4. Use a production WSGI server like Gunicorn:
-   ```bash
-   pip install gunicorn
-   gunicorn -w 4 -b 0.0.0.0:5000 app:app
-   ```
 
 ## Testing
 
 The project includes unit tests covering:
 - Models (Loan, LoanPayment)
-- Services (LoanService with pagination)
+- Services (LoanService)
+- Repositories (LoanRepository, PaymentRepository)
 - REST API routes (validation, error handling)
-- GraphQL schema (queries, pagination)
+- GraphQL schema (queries)
 
 Run tests with:
 ```bash
@@ -312,4 +266,3 @@ Generate coverage report:
 ```bash
 pytest --cov=app --cov-report=html
 ```
-
