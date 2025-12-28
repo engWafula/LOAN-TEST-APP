@@ -61,7 +61,6 @@ export function AddPaymentModal({ isOpen, onClose, onPaymentAdded, loans }: AddP
     setSuccess(false);
 
     try {
-      // Transform form data to API format
       const loanIdNum = parseInt(data.loan_id, 10);
       const amountNum = data.amount && data.amount.trim() !== '' ? parseFloat(data.amount) : undefined;
 
@@ -78,11 +77,9 @@ export function AddPaymentModal({ isOpen, onClose, onPaymentAdded, loans }: AddP
         onPaymentAdded();
       }
 
-      // Auto-close after success
-      setTimeout(() => {
+
         setSuccess(false);
-        onClose();
-      }, 1500);
+
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add payment');
     }
