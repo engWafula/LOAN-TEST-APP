@@ -19,10 +19,5 @@ export interface SortState {
   direction: SortDirection;
 }
 
-export interface PaginationState {
-  page: number;
-  pageSize: number;
-}
-
 export type LoansTableColumn = ColumnDef<LoanData>;
 
