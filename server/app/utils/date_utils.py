@@ -1,6 +1,4 @@
-"""
-Date utility functions for consistent date handling across the application.
-"""
+
 import datetime
 
 

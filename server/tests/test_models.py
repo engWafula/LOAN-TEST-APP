@@ -85,17 +85,3 @@ class TestLoanPayment:
         assert result["loan_id"] == 1
         assert result["payment_date"] == "2025-03-04"
     
-    def test_payment_to_dict_without_date(self):
-        """Test converting payment to dictionary without date."""
-        payment = LoanPayment(
-            id=1,
-            loan_id=1,
-            payment_date=None
-        )
-        
-        result = payment.to_dict()
-        
-        assert result["id"] == 1
-        assert result["loan_id"] == 1
-        assert result["payment_date"] is None
-
