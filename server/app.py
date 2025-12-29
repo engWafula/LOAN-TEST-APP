@@ -1,13 +1,12 @@
+import os
 import logging
 from app import create_app
-from app.config import Config
+from app.config import config
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s %(levelname)s %(name)s %(message)s'
-)
+env = os.environ.get("FLASK_ENV", "development").lower()
+config_class = config.get(env, config["development"])
 
-app = create_app(Config)
+app = create_app(config_class)
 
 if __name__ == "__main__":
     app.run(

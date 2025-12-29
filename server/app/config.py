@@ -17,7 +17,6 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     DEBUG = False
     GRAPHIQL_ENABLED = False
-    SECRET_KEY = os.environ.get("SECRET_KEY")
 
 
 class TestingConfig(Config):
@@ -30,6 +29,5 @@ config = {
     "development": DevelopmentConfig,
     "production": ProductionConfig,
     "testing": TestingConfig,
-    "default": DevelopmentConfig
 }
 

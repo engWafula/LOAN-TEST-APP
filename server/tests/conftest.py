@@ -1,6 +1,4 @@
-"""
-Pytest configuration and fixtures.
-"""
+
 import pytest
 from app import create_app
 from app.config import TestingConfig
@@ -15,12 +13,10 @@ def app():
 
 @pytest.fixture
 def client(app):
-    """Create test client."""
     return app.test_client()
 
 
 @pytest.fixture
 def runner(app):
-    """Create test CLI runner."""
     return app.test_cli_runner()
 
