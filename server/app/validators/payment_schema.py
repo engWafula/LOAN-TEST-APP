@@ -13,8 +13,7 @@ class PaymentCreateSchema(Schema):
     )
     
     payment_date = fields.Date(
-        required=False,
-        allow_none=True,
+        required=True,
         format="%Y-%m-%d",
         missing=None,
         error_messages={
@@ -23,9 +22,7 @@ class PaymentCreateSchema(Schema):
     )
     
     amount = fields.Float(
-        required=False,
-        allow_none=True,
-        missing=None,
+        required=True,
         validate=validate.Range(min=0),
         error_messages={
             "invalid": "amount must be a valid number",
@@ -35,16 +32,14 @@ class PaymentCreateSchema(Schema):
     
     @pre_load
     def parse_payment_date(self, data, **kwargs):
-        """Pre-process payment_date to handle empty strings and None values."""
+        """process payment_date to handle empty strings and None values before validation is applied.."""
         if 'payment_date' in data:
             if data['payment_date'] == '' or data['payment_date'] is None:
                 data['payment_date'] = None
             elif isinstance(data['payment_date'], str):
                 try:
-                    # Validate the date format using our utility
                     parse_date(data['payment_date'])
                 except ValueError:
-                    # Let marshmallow handle the validation error
                     pass
         return data
     
