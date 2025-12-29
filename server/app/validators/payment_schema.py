@@ -15,7 +15,6 @@ class PaymentCreateSchema(Schema):
     payment_date = fields.Date(
         required=True,
         format="%Y-%m-%d",
-        missing=None,
         error_messages={
             "invalid": "payment_date must be in YYYY-MM-DD format"
         }
